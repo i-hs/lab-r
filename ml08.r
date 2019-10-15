@@ -33,7 +33,7 @@ install.packages('rpart.plot')
 library(rpart.plot)
 rpart.plot(x= wine_rpart, digits = 3)
 rpart.plot(wine_rpart, digits = 4, fallen.leaves = T)
-
+rpart.pl
 # 4. 모델 평가 - regression tree가 테스트 데이터를 얼마나 잘 설명?
 wine_predict <-predict(wine_rpart, wine_test)
 summary(wine_predict)
@@ -80,3 +80,35 @@ cor(wine_predict2, wine_test$quality) #0.64
 
 # MAE: 평균 절대 오차
 MAE(wine_predict2, wine_test$quality)
+
+#레드와인에 적용
+rm(list = ls())
+redwine <- read.csv(file = "mlwr/redwines.csv")
+hist(redwine$quality)
+summary(redwine)
+str(redwine)
+1599*.75
+red_train = redwine[1:1199,]
+red_test = redwine[1200:1599,]
+head(redwine)
+red_rpart <- rpart(formula = quality ~ ., data = red_train)
+red_rpart
+rpart.plot(red_rpart, digits = 4, fallen.leaves = T)
+
+# 4. 모델 평가 - regression tree가 테스트 데이터를 얼마나 잘 설명?
+red_predict <-predict(red_rpart, red_test)
+cor(red_predict, red_test$quality) #0.59
+
+# MAE(Mean Absolute Error): 평균 절대 오차
+# 오차(실제값 - 예측값)들의 절대값의 평균 
+MAE <- function (actual, predict){
+  return(mean(abs(actual-predict)))
+}
+MAE(red_test$quality, red_predict) #0.54
+
+#5 모델 성능 향상
+red_cubist <- cubist(x = red_train[-12], y = red_train$quality) 
+red_predict2 <- predict(red_cubist, red_test)
+cor(red_predict2, red_test$quality)  #0.66
+MAE(red_predict2, red_test$quality) #0.45
+rpart.plot(red_rpart, digits = 3, fallen.leaves = T)
