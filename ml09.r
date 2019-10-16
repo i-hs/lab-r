@@ -48,16 +48,17 @@ concrete_model  <- neuralnet(formula = strength~ .,
 
 # 생성된 NN을 확인
 plot(concrete_model)
-
+str(concrete_model)
 # 4. 만들어진 NN을 평가 - 테스트 데이터 세트에 적용 
 model_result <- compute(concrete_model, concrete_test[-9])
 head(model_result) # 신경망 모델에 의해서 계산된 strength 예측값
 summary(model_result)
 
-predict_result <- model_result$net.result
+predict_result <- model_result$net.result # 배열열
+str(predict_result)
+summary(predict_result)
 # 예측 결과와 실제 값의 상관 관계 - 상관 계수
 cor(predict_result, concrete_test$strength)  #0.806
-
 concrete_test[255:257,9]
 
 # 오차
@@ -105,7 +106,7 @@ max_st<-max(concrete$strength)
 min_st<-min(concrete$strength)
 max_st
 min_st
-abnormalization <- function(x) {
+denormalization <- function(x) {
         max_str <- max(concrete$strength)
         min_str <- min(concrete$strength)
         return((x*(max_str-min_str))+min_str)
@@ -113,9 +114,9 @@ abnormalization <- function(x) {
 
 
 str(model_result$net.result)
-concrete_abnorm<- abnormalization(model_result$net.result)
-concrete_abnorm2<- abnormalization(model2_result$net.result)
-concrete_abnorm5<- abnormalization(model5_result$net.result)
+concrete_denorm<- denormalization(model_result$net.result)
+concrete_denorm2<- denormalization(model2_result$net.result)
+concrete_denorm5<- denormalization(model5_result$net.result)
 
 # 상관계수
 concrete_strength <- as.data.frame(concrete$strength)
@@ -128,24 +129,26 @@ MAE(concrete_strength_test, concrete_abnorm)          #MAE    7.49
 MAE(concrete_strength_test, concrete_abnorm2)         #MAE2   5.50
 MAE(concrete_strength_test, concrete_abnorm5)         #MAE5   4.60
 
+auctal_predict_df <- data.frame(actual = concrete[774:1030,9],
+                                predict1 = concrete_abnorm,
+                                predict2 = concrete_abnorm2,
+                                predict3 = concrete_abnorm5)
 
 # neuralnet 함수의 파라미터 중에서
 # hidden 파라미터는 은닉 노드와 은닉 계층의 갯수를 조정할 수 있고,
 # act.fct 파라미터는 활성 함수를 바꿔줄 수 있습니다.
 # 두 개의 파라미터를 활용해서 다른 신경망 모델을 만들어 보고,
 # 예측 결과가 얼마나 개선되는 지 확인해 보세요.
-model3 <- neuralnet(formula = strength ~.,
-                    data = concrete_train,
-                    hidden =3,
-                    act.fct = tanh)
-plot(model3)
-model3_result <- compute(model3, concrete_test[-9])
-model32 <- neuralnet(formula = strength ~.,
-                    data = concrete_train,
-                    hidden =3)
-plot(model32)
-model32_result <- compute(model32, concrete_test[-9])
+set.seed(12345)
+softsum <- function(x){
+        log(1 + exp(x))
+}
+curve(expr = softsum, from =-5, to = 5)
 
-cor(model3_result, concrete_test$strength)  #0.9024
-cor(model32_result, concrete_test$strength)  #0.9024
-MAE(concrete_test$strength, predict_result2) # 0.0686
+model <- neuralnet(formula = strength ~ .,
+                   data = concrete_train, # 정규화된 데이터
+                   hidden = c(5,3),       # c(첫번째 층 노드 갯수, 두번째 층 노드 갯수)
+                   act.fct = softsum,
+                   stepmax = 1e6)     # 활성함수
+plot(model)
+
