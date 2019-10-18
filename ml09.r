@@ -151,4 +151,4 @@ model <- neuralnet(formula = strength ~ .,
                    act.fct = softsum,
                    stepmax = 1e6)     # 활성함수
 plot(model)
-
+correct2_count
